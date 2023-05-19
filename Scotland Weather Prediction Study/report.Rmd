@@ -1,0 +1,322 @@
+---
+title: "StatComp Project 2: Scottish weather"
+author: "Zongsheng Liu (s2097920)"
+output:
+  html_document:
+    number_sections: no
+  pdf_document:
+    number_sections: no
+header-includes:
+  - \newcommand{\bm}[1]{\boldsymbol{#1}}
+  - \newcommand{\mat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+---
+
+```{r setup, include = FALSE}
+# Modify this setup code chunk to set options
+# or add extra packages etc if needed.
+# See the project instructions for more details
+# on what code to show, and where/how.
+
+# Set default code chunk options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  eval = TRUE
+)
+
+suppressPackageStartupMessages(library(tidyverse))
+theme_set(theme_bw())
+suppressPackageStartupMessages(library(StatCompLab))
+
+# To give the same random number sequence every time the document is knit:ed,
+# making it easier to discuss the specific numbers in the text:
+set.seed(12345L)
+```
+
+```{r code=readLines("functions.R"), eval=TRUE, echo=FALSE,warning=FALSE}
+# Do not change this code chunk
+# Load function definitions
+source("functions.R")
+```
+
+
+# Seasonal variability
+
+### Data Visualization
+
+To have a brief idea of the seasonal variability, firstly, start loading the two data sets $ghcnd\_stations$ and $ghcnd\_values$ and try to plot it. Since the data set is relatively vast and massive to present, eyesight would be narrowed down to only 2001 for the following plot. In order to visualize the data set, use the internal function $\textit{filter}$, $group\_by$ 
+and $\textit{mutate}$ to construct well-organized data to plot the following results. \
+
+```{r, eval=TRUE, echo=FALSE}
+plot1()
+```
+
+The first plot combined all the information; It took longitude as the x-axis and latitude as the y-axis; each dot would represent an individual station based on its geographic information. The size of each dot would be proportional to the mean temperature, and the color would indicate the total precipitation in 2001; a higher total value would lead to a darker color. As a result suggest, it followed the intuition from the geographic perspective. The mean temperature would decrease as latitude increases, and the total precipitation would increase as its longitude is close to the east coast. \
+
+
+
+To exam the specific seasonal variability on temperature, firstly plot for $\text{TMAX}$ and $\text{TMIN}$ for all stations during 2001. It trends to both $\text{TMAX}$ and $\text{TMIN}$ asymptotically followed a normal distribution with a peak at the middle of the year. Since the plot is still massive due to the volume of the data set. \
+
+```{r, eval=TRUE, echo=FALSE}
+# Plot temperature data
+plot2()
+```
+
+In order to verify the seasonal variability, the above plot could be further grouped by $\textit{ID}$ and Seasonal information. \
+
+```{r, eval=TRUE, echo=FALSE}
+# Plot temperature data
+plot6()
+```
+
+Then, introduce a new plot showing each station's monthly seasonal averages (from Jan 2001 to Dec 2001) of $\text{TMIN}$ and $\text{TMAX}$ separately.  \
+
+```{r, eval=TRUE, echo=FALSE}
+plot3()
+```
+
+It would clearly follow the same pattern expected above; in this case, the monthly seasonal averages clearly show the seasonal pattern. The shapes are similar bell shapes for all stations, but
+may vary a bit in the average and amplitude. \
+
+Similarly, all stations' daily precipitation during 2001 could be plotted as follow. \
+
+```{r, eval=TRUE, echo=FALSE}
+plot4()
+```
+
+Similarly, plotting $\textit{PRCP}$, which were separated by $\textit{ID}$ and $\textit{season}$ would be helpful to examine the seasonal variability. \
+
+```{r, eval=TRUE, echo=FALSE}
+plot7()
+```
+
+Since the data set contains some 0s, the plot would be hard to read for examining the seasonal pattern. It could be separated into some subplots corresponding to each station with monthly average precipitation. \
+
+```{r, eval=TRUE, echo=FALSE}
+plot5()
+```
+
+Believe that the monthly average precipitation would not be an excellent representation of the data due to the number of 0s in the data set. In this case, it does not have a typical pattern for each station's seasonal variability. However, the minimum monthly average would occur around May, with different amplitudes for each station. \
+
+### Hypothesis Testing
+
+
+Since the first hypothesis test would focus on seasonal variability, it would be helpful to group the data into two seasonal categories in advance. Let winter be \{Jan, Feb, Mar, Oct, Nov, Dec\}, and let summer be \{Apr, May, Jun, Jul, Aug, Sep\}. Using $\textit{mutate}$ and $\textit{ifelse}$ allowed adding a new column named $\textit{Season}$ and identifying the seasonal group for every row. By applying the same techniques, a new column named $\textit{Summer}$ was added to the data that is $\textit{TRUE}$ for data in the defined summer months. It would make the following effect for the $ghcnd\_values$ as shown below. \
+
+```{r, eval=TRUE, echo=FALSE}
+head(ghcnd_values)
+```
+
+Then, introduce a Monte Carlo permutation test to test the following hypothesis:  \
+
+$$ H0:\text{The rainfall distribution is the same in winter as in summer.} $$ 
+$$ H1:\text{The winter and summer distributions have different expected values. }$$
+
+This test was designed to evaluate the significance of differences in rainfall distributions between two seasonal groups. Firstly, introduce the test statistic $T$ as follow: \
+
+$$ T = \lvert \text{winter average − summer average} \rvert $$ 
+
+In this type of test, the observed data are randomly shuffled between the two groups, and the test statistic was calculated for each permuted sample. The above process would be repeated $N$ times by considering the relatively large volume of the existing data set and keeping a more accurate formulation, $N$ would be set to $N=10000$ in this case. Recall the standard definition of $\textit{p-value}$, and it denoted the probability of obtaining results at least as extreme as the observed results. In the above Monte Carlo permutation test, the $\textit{p-value}$ is defined by the proportion of times the test statistic was at least as extreme as the observed test statistic. Specifically, the $\textit{p-value}$ is computed as the number of times the absolute difference between the winter and summer average rainfall was more significant than or equal to the observed absolute difference, divided by the total number of permutations. \
+
+
+To test the above hypothesis, set $\alpha=0.05$. Then, the $95\%$ Confidence Intervals would be constructed. In general,  it is a range of values that it is 95\% confident contains the true value of the parameter being estimated. In this case, the difference between the winter and summer rainfall distributions is an interval estimate. In theory, the above Monte Carlo permutation test is theoretically constructed by finding the values that bound the central 95\% of the simulated permutation test statistics. In terms of percentiles, the upper and lower bounds of the 95\% confidence interval correspond to the $2.5_{th}$ percentile and the $97.5_{th}$ percentile of the simulated T values, respectively. However, 2 cases are considered. While most observed counts are zero for p-value, as $Project2Hints$ suggested, $95\% CI$ would be constructed as follow:
+
+$$CI_p = (0, 1-0.025^{\frac{1}{N}})$$. However, for such an interval, width needs to be considered carefully. It need to satisfy $$1-0.025^{\frac{1}{N}} \leq \epsilon $$
+and $$N \geq \frac{log(0.025)}{log(1-\epsilon)}.$$ For $p-value > 0$, it is a trivial case such that $95\%CI$ is computed by 
+$$CI_{p} = \tilde{p} \pm z_{0.975} \sqrt{\frac{\tilde{p}(1-\tilde{p})}{N}}$$ where $\sqrt{\frac{\tilde{p}(1-\tilde{p})}{N}}$ was just clarified as the standard deviation of $\textit{p-value}$. In this case, running the Monte Carlo Permutation Test with N=10000 would return the following results: 
+
+```{r, eval=TRUE, echo=FALSE}
+table1
+```
+
+Based on the test result above, most of the weather stations have a small p-value. For stations $\text{UKE00105874 BRAEMAR}$, $\text{UKE00105875 BALMORAL}$, $\text{UKE00105884 ARDTALNAIG}$, $\text{UKE00105885 FASKALLY}$, $\text{UKE00105887 PENICUIK}$ and $\text{UKE00105930 BENMORE}$, above 6 stations had p-value=0, it suggested strong evidence against the null hypothesis that the rainfall distribution is the same in winter as in summer. For station $\text{UKE00105886 LEUCHARS}$, it has a $\textit{p_value}$ of 0.031, which is still below the $\alpha=0.05$. It suggested some evidence against the null hypothesis, but it is not as strong as other stations with a p-value of 0; therefore, the null hypothesis is still rejected.
+ $\text{UKE00105888 EDINBURGH}$ was the only station who had a p-value greater than $\alpha$. Therefore, the null hypothesis for this station failed to reject. In other words, there is not enough evidence to conclude that there is a significant difference in the rainfall distribution between summer and winter at this station. \
+ 
+ The confidence intervals from the above results showed the lower and upper bounds for the true difference in rainfall between winter and summer for each weather station. It is $95\%$ confident that the true difference in rainfall distribution between winter and summer lies between the lower and upper bounds of the interval for each station. For stations mentioned above with $\textit{p-value}=0$, the lower bound of $CI$ is 0, which indicates that the difference in rainfall distribution between winter and summer is statistically significant. The CI upper bound is 0.0036 which is relatively small, indicating a narrow range of possible values for the true population parameter. To sum up, the test results suggested strong evidence of a difference in the expected rainfall between winter and summer for most of the weather stations except for $\text{UKE00105888 EDINBURGH}$.
+ 
+ 
+
+# Spatial weather prediction
+
+### Model Estimation
+
+In this section, models for the monthly averaged precipitation values in Scotland will be estimated. Knowing that the precipitation data are very skewed and sensitive, with variance increasing with the mean value. Thus, the following model would estimate the square root of the monthly averaged precipitation values. In order to construct the above model, a new data frame named $ghcnd\_lm$ would be constructed as follow: it contained average monthly precipitation, the monthly average of $\textit{DecYear}$, Longitude, Latitude and Elevation as columns, and grouped by $\textit{ID}$, $\textit{Year}$ and $\textit{Month}$. The first several rows could be shown as follow. \
+
+```{r, eval=TRUE, echo=FALSE}
+head(ghcnd_lm)
+```
+
+
+Let $M_{0}$ be a basic model for the square root of monthly average precipitation, and it will be defined as:
+
+$$ M_0 : Value\_sqrt\_avg  \sim  \textit{Intercept + Longitude + Latitude + Elevation + DecYear} $$
+
+In order to reflect the seasonal variability, introduce the covariates $cos(2\pi kt)$ and $sin(2\pi kt)$ for $k=1, 2, ...$ . Thus, the model $M_k$ could be defined as 
+$$M_k= M_0 + \sum_{k=1}^{K}[\gamma_{c,k} cos(2\pi kt)+\gamma_{s,K} sin(2\pi kt)]$$. 
+
+For the above expression, $\gamma_{s,k}$ and $\gamma_{c,k}$ was defined as the model coefficients, and $\text{t}$ was defined to be the average monthly $\text{DecYear}$ discussed above. \
+
+
+In order to have a meaningful interpretation on the following result table for every individual model, $\textit{t-value}$, $Pr(>|t|)$ and     $\textit{Signif. codes}$ should be introduced.  $\textit{t-value}$ is associated with testing the parameter's significance in the first column. A relatively large $\textit{t-value}$ would suggest that the estimated coefficient is more likely to be different from zero, and the predictor variable is likely to be important in explaining the variation in the response variable.  $Pr(>|t|)$ denoted the $\textit{p-value}$ associated with the t-statistic discussed previously. If the p-value is smaller than $\alpha$, the null hypothesis (the true value of the coefficient is zero) would be rejected. Similarly, if the p-value is larger than $\alpha$, it fails to reject the null hypothesis, and there is insufficient evidence to conclude that the true coefficient value is different from zero. Also, the asterisks at the most right column denoted the level of significance; more asterisks would suggest a smaller $\textit{p-value}$ and a higher level of significance. $\textit{Signif.codes}$ would just provide a visually accessible way of assessing whether the statistic met various $\alpha$ criteria. \
+
+Coefficients of $M_0$, $M_1$, $M_2$, $M_3$ and $M_4$ could be estimated by $lm()$ as follow:
+
+##### $M_0:$
+
+$$ M_0 : Value\_sqrt\_avg  \sim  Intercept + Longitude + Latitude + Elevation + DecYear $$
+```{r, eval=TRUE, echo=FALSE}
+summary(M0)
+```
+
+It is easy to check that for the above 5 parameters, only the coefficient of $\textit{Intercept}$ seemed not statistically significant (0 asterisks) compared to the rest of the 4 estimated coefficients having 3 asterisks which represented high levels of significance. \
+
+##### $M_1:$
+
+\begin{align*}
+ M_1 : Value\_sqrt\_avg  \sim  Intercept + Longitude + Latitude + Elevation + DecYear \\
++cos(2\pi DecYear)+sin(2\pi DecYear).
+\end{align*}
+
+```{r, eval=TRUE, echo=FALSE}
+summary(M1)
+```
+
+Compared to $M_0$, $M_1$ was just added two more $cos$ and $sin$ terms. The coefficients for the first 5 common variables are similar to those in model $M_0$. Furthermore, the additional $sin$ and $cos$ terms are both significant(3 asterisks) and may indicate a clear annual pattern in the data.  \
+
+##### $M_2:$
+
+\begin{align*}
+ M_2 : Value\_sqrt\_avg  \sim  Intercept + Longitude + Latitude + Elevation + DecYear \\
++cos(2\pi DecYear) + sin(2\pi DecYear) \\
++cos(4\pi DecYear) + sin(4\pi DecYear).
+\end{align*}
+
+```{r, eval=TRUE, echo=FALSE}
+summary(M2)
+```
+
+Similarly, $M_2$ had 2 more additional $sin$ and $cos$ terms compared to $M_1$. In this case, the first 7 common terms would have the same situation in terms of asterisks compared to $M_1$. However, only the additional term $cos(4\pi DecYear)$ is significant(3 asterisks) compared to another additional term $sin(4\pi DecYear)$, which had 0 asterisks. \
+
+##### $M_3:$
+
+\begin{align*}
+ M_3 : Value\_sqrt\_avg  \sim  Intercept + Longitude + Latitude + Elevation + DecYear \\
++cos(2\pi DecYear) + sin(2\pi DecYear) \\
++cos(4\pi DecYear) + sin(4\pi DecYear) \\
++cos(6\pi DecYear) + sin(6\pi DecYear).
+\end{align*}
+
+```{r, eval=TRUE, echo=FALSE}
+summary(M3)
+```
+
+Regarding statistical significance level(asterisks), the first 9 common terms would have exactly the same results compared to $M_2$. In addition, only the additional term $sin(6\pi DecYear)$ is relatively significant(2 asterisks) compared to another additional term $cos(6\pi DecYear)$, which had 0 asterisks. \
+
+##### $M_4:$
+
+\begin{align*}
+ M_4 : Value\_sqrt\_avg  \sim  Intercept + Longitude + Latitude + Elevation + DecYear \\
++cos(2\pi DecYear) + sin(2\pi DecYear) \\
++cos(4\pi DecYear) + sin(4\pi DecYear) \\
++cos(6\pi DecYear) + sin(6\pi DecYear) \\
++cos(8\pi DecYear) + sin(8\pi DecYear). 
+\end{align*}
+
+```{r, eval=TRUE, echo=FALSE}
+summary(M4)
+```
+
+The last model $M_4$ would obtain the most significant number of $cos$ and $sin$ terms. The first 11 common terms compared to $M_3$ obviously had the preciously same result in terms of asterisks. However, the last two additional terms would both be identified as insignificant since both of them had 0 asterisks. \
+
+In order to compare the above model, an important concept $\textit{Adjusted R-squared}$ should be interpreted. $\textit{Adjusted R-squared}$ could be seen as a  penalized version of $\textit{R-squared value}$.It would provide a measure of how well the model will perform on new data and also adjusted on the number of predictor variables in the model. General speaking, a higher $\textit{adjusted R-squared value}$ indicates a better fit of the model. To sum up from the above investigation, $\textit{R-squared value}$ was keeping increasing while more $cos$ and $sin$ terms were added. In other words, $M_4$ had the highest $\textit{R-squared value}$, which means it may have a better fit of the model to the data. Another auxiliary variable would be consider to examine was  $\textit{F-statistic}$. It would measure the overall significance of the model. In this case, $M_4$ also had the highest $\textit{F-statistic}$, which also suggests as a better fit. However, by the simple investigation, the most of additional terms added in $M_2$, $M_3$ and $M_4$ would be identified as insignificant by their $\textit{P-value}$. Although, $\textit{adjusted R-squared value}$  and F-statistic would both increase by adding more terms and , they may lead to a new risk that a more complex model would overfit the data in this case.\
+
+### Stratified Cross-Validation
+
+In order to compare which model would predict precipitation better at new locations, then stratified cross-validation that groups the data by weather station would be introduced. In theory, it would be followed as a similar idea for $\textit{K-fold Cross Vaildation}$. Instead of splitting the whole data set into $K$ subsets and doing $K$ times cross-validation, for each station, data set $\textit{ghcnd_lm}$ would be separated into two parts; the first part, which only contains the data from this specifically tested station would be used as a validation set, and the second part is just the rest of data which had already excluded the data from this tested station, it would be used for training the above 5 models. In order to examine the performance of each model, after each validation at each station, scores could be computed as a key performance indicator. To consider the above 5 models from different perspectives, there were two scores $\textit{Dawid-Sebastiani Score } S_{DS}$ and $\textit{Squared Error Score } S_{SE}$ that would be computed. \
+
+It would be computed as follow:
+$$S_{SE}(F,y) = (y- \hat{y}_{F})^{2}$$
+$$ S_{DS}(F,y) = \frac{(y-\mu^{2}_{F})^{2}}{\sigma^{2}_{F}} + log(\sigma^{2}_{F}) $$
+
+Where $\hat{y}_{F}$ is a point estimate under prediction distribution $F$; similarly,  $\mu_{F}$ and $\sigma_{F}$ were point expectation and standard deviation respectively under the prediction distribution $F$. \
+
+For each validation data set corresponding to each station, assuming it would have a cardinality $N$, there would be precisely the number of $N$ scores $S(F, y_{i})$. However, another objective for this task is to examine whether the prediction accuracy across the whole year is the same. In this case, grouping each score $S(F, y_{i})$ by the $\textit{Month}$ category associated with each validated point in advance would be helpful. Furthermore, the mean score would be computed as follow:
+$$\hat{S} = \frac{1}{N} \sum^{N}_{i=1} S(F,y_{i}). $$
+In other words, it would take the mean value of all score values for each validation point. Thus, the score result would be obtained as follow. \ 
+
+##### $\textit{DS Score Result}$
+```{r, eval=TRUE, echo=FALSE}
+cv_station_result$score_table1
+```
+
+##### $\textit{SE Score Result}$
+```{r, eval=TRUE, echo=FALSE}
+cv_station_result$score_table2
+```
+
+Since the above two scoring rules were made by negative orientation. In other words, a lower score would indicate a better-fitting performance. When the following two conditions are satisfied 
+$$\sigma^{2}_{F} < 1 \textbf{ and } \mu_{F}-\sqrt{-\sigma^{2}_{F}log(\sigma^{2}_{F})} < y < \mu_{F}+\sqrt{-\sigma^{2}_{F}log(\sigma^{2}_{F})},$$ 
+it would lead to a negative $\textit{Dawid-Sebastiani Score}$. However, the same rule would be applied that compares the scores computed on the number line with lower values as better. \
+
+The above two tables would be easily visualized by two bar-charts. \
+```{r, eval=TRUE, echo=FALSE}
+score_plot1()
+score_plot2()
+```
+
+Knowing that $\textit{Dawid-Sebastiani Score}$ considers both the bias and variance of a model, it would provide a better measure of prediction accuracy, particularly for generalizing to new data. In this case, $\textit{Dawid-Sebastiani Score}$ would be a helpful tool to examine the prediction accuracy at different stations. By observing $\textit{Dawid-Sebastiani Score}$ from the first table, it would be obvious that most of the stations($\textit{UKE00105874 BRAEMAR}$, $\textit{UKE00105875 BALMORAL}$, $\textit{UKE00105884 ARDTALNAIG}$, $\textit{UKE00105885 FASKALLY}$. $\textit{UKE00105887 PENICUIK}$ and $\textit{UKE00105930 BENMORE}$) would have the relatively lowest $\textit{DS Score}$ from $M_4$, it indicated $M_4$ would be suggested as a better model. For $\textit{UKE00105886 LEUCHARS}$ and $\textit{UKE00105888 EDINBURGH}$ would have obtained the smallest $\textit{DS Score}$ from $M_0$, which lead to an opposite result that $M_0$ had better performance in this case. \
+
+Similarly, the same analysis algorithm could be done for results from $\textit{Squread Error Score}$. The result had an astonishing similarity; the lowest score value of $M_4$ would be obtained from the same stations discussed above $\textit{UKE00105874 BRAEMAR}$, $\textit{UKE00105875 BALMORAL}$, $\textit{UKE00105884 ARDTALNAIG}$, $\textit{UKE00105885 FASKALLY}$. $\textit{UKE00105887 PENICUIK}$ and $\textit{UKE00105930 BENMORE}$. Furthermore, $\textit{UKE00105886 LEUCHARS}$ and $\textit{UKE00105888 EDINBURGH}$ would also had the least score values from $M_0$. \ 
+
+In summary, models are not equally good at predicting the different stations. In general, $ M_4 $ is a better model for most stations. However, it may also suggest that $M_0$ is better for few stations such as $\textit{UKE00105886 LEUCHARS}$ and $\textit{UKE00105888 EDINBURGH}$. \
+
+Since each individual score $S(F, y_{i})$ had already been grouped by $\textit{month}$, the focus would be easily narrowed down to monthly mean scores for each model and station across the whole year. By applying the same technique, the monthly mean scores could be computed by the mean value of the set grouped by $\textit{ID}$, $\textit{Month}$ and $\textit{Model}$. Then, results could be obtained by a data frame with size $96\times12$. The first two columns indicate $\textit{ID}$ and $\textit{Month}$, the following 5 columns would illustrate $S_{DS}$ over 5 models, and last 5 columns were filled by  $S_{SE}$ over 5 models. Since there are 8 stations and score values would be grouped into 12 months; thus, this data frame would contain precisely $8\times 12 = 96$ rows. The first several rows of this data frame could be visualized as follow (Full details can be found in Code Appendix). \
+
+```{r, eval=TRUE, echo=FALSE}
+head(cv_station_result$all_result)
+```
+
+Then, above data frame could be further summarized as the monthly mean score for all stations. It could be represented as the following two tables depend on its scoring method. \
+
+##### $\textit{DS Score Result}$
+```{r, eval=TRUE, echo=FALSE}
+cv_station_result$score_table3
+```
+
+##### $\textit{SE Score Result}$
+```{r, eval=TRUE, echo=FALSE}
+cv_station_result$score_table4
+```
+
+Furthermore, the above two tables could make a more general observation of each month's average score values. Since $\textit{Squread Error Score}$ was computed as an average of the squared differences between the predicted and actual values, it would provide a good measure of the overall fit between predictions and the actual values. In this case, it may be helpful to introduce $\textit{Squread Error Score}$ as a main indicator scoring method to examine the overall fit performance for each model in each month. \
+
+Then, it could be plotted as two bar-chart for comparing scores. \
+```{r, eval=TRUE, echo=FALSE}
+score_plot3()
+score_plot4()
+```
+
+By observing the results of $\textit{Squread Error Score}$, it was difficult to identify which model would always have a dominant lowest value across most months. For $\textit{Jan}$, $\textit{Apr}$, $\textit{Jun}$, $\textit{Nov}$ and $\textit{Dec}$, it would seemed to have scores of $M_4$ which were identified as the least one. For $\textit{Feb}$, $\textit{Mar}$, $\textit{Jul}$ and $\textit{Aug}$, they suggested $M_0$ was better because of its lowest score values. Furthermore, for the rest of the months, scores from $M_2$ or $M_3$ may sometimes take the lowest value. A similar observation could be done for results of $\textit{Dawid-Sebastiani Score}$ score. A similar conclusion would be drawn; there would not be any models that had the smallest score values across most of the months. From the above discussion, it is believed that the prediction accuracy or overall fit performance is not the same across the whole year for every model. \
+
+Then, score values in each month could be further investigated at every station. It could be visualized as two plots below. In this case, since each subplot would contain 8 values from all 12 months, it would be challenging to examine 96 bars in total if it was a bar chart. For better visualization, the following two plots would be designed as two line plots instead. \
+
+```{r, eval=TRUE, echo=FALSE}
+score_plot5()
+score_plot6()
+```
+
+In this case, each plot has five subplots grouped by model type. The two plots would generally have the same trend; for each model, it would be observed that general score performance at each station was different, especially at station $\textit{UKE00105930 BENMORE}$ and $\textit{UKE00105886 LEUCHARS}$. The above two plots could also be viewed from monthly scores variation; for each model, each station's score values for all months would not be consistent; it had some amount of variations. The above observation would further validate the previous conclusion that the models were not equally good at predicting the different stations, even though the prediction accuracy was not the same for every month. \
+
+
+# Code appendix
+
+##### Full Details of Score Results
+```{r, eval=TRUE, echo=FALSE}
+cv_station_result$all_result
+```
+
+## Function definitions
+
+```{r code=readLines("functions.R"), eval=FALSE, echo=TRUE,warning=FALSE}
+# Do not change this code chunk
+```
+
